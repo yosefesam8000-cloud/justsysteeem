@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام كافيه هافن - Cafe Haven POS</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                    },
+                    colors: {
+                        haven: {
+                            50: '#fcf8f5',
+                            100: '#f7ede6',
+                            200: '#edd8cb',
+                            600: '#b87d4b',
+                            700: '#966135',
+                            800: '#7a4e2b',
+                            900: '#5c3a1f',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f7ede6;
+            color: #2c221e;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1e5df;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #b87d4b;
+            border-radius: 3px;
+        }
+        .fade-in {
+            animation: fadeIn 0.25s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-haven-50 min-h-screen flex flex-col">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-haven-900 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="w-10 h-10 rounded-xl bg-haven-600 flex items-center justify-center shadow-inner text-white font-black text-xl">
+                    <i class="fa-solid fa-mug-hot"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">Cafe Haven</h1>
+                    <p class="text-xs text-haven-200">في قهوتي شئ من تفاصيلك ✨</p>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+                <button onclick="switchTab('tables')" id="tab-btn-tables" class="px-3.5 py-2 rounded-lg bg-haven-700 text-white font-semibold text-sm transition shadow flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-chair"></i> الصالة (<span id="active-tables-count">0</span>/9)
+                </button>
+                <button onclick="switchTab('room')" id="tab-btn-room" class="px-3.5 py-2 rounded-lg bg-haven-800 text-haven-100 hover:bg-haven-700 font-semibold text-sm transition flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-gamepad"></i> الروم
+                </button>
+                <button onclick="switchTab('menu')" id="tab-btn-menu" class="px-3.5 py-2 rounded-lg bg-haven-800 text-haven-100 hover:bg-haven-700 font-semibold text-sm transition flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-book-open"></i> المنيو
+                </button>
+                <button onclick="switchTab('inventory')" id="tab-btn-inventory" class="px-3.5 py-2 rounded-lg bg-haven-800 text-haven-100 hover:bg-haven-700 font-semibold text-sm transition flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-boxes-stacked"></i> البضائع
+                </button>
+                <button onclick="switchTab('expenses')" id="tab-btn-expenses" class="px-3.5 py-2 rounded-lg bg-haven-800 text-haven-100 hover:bg-haven-700 font-semibold text-sm transition flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-money-bill-wave"></i> المصاريف
+                </button>
+                <button onclick="switchTab('reports')" id="tab-btn-reports" class="px-3.5 py-2 rounded-lg bg-haven-800 text-haven-100 hover:bg-haven-700 font-semibold text-sm transition flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-calendar-days"></i> الحسابات والأرشيف
+                </button>
+            </div>
+
+            <!-- Daily Totals Quick View -->
+            <div class="hidden lg:flex items-center gap-3 bg-haven-800 px-4 py-2 rounded-xl border border-haven-700">
+                <div class="text-left">
+                    <span class="block text-xs text-haven-200">إيرادات اليوم</span>
+                    <span id="header-total-revenue" class="text-lg font-black text-amber-300">0 ج.م</span>
+                </div>
+                <div class="w-px h-8 bg-haven-700"></div>
+                <div class="text-left">
+                    <span class="block text-xs text-haven-200">فودافون كاش</span>
+                    <span id="header-vodafone-revenue" class="text-lg font-bold text-sky-300">0 ج.م</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
+
+        <!-- TAB 1: TABLES VIEW -->
+        <section id="tab-tables" class="space-y-6 fade-in">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-haven-200">
+                <div>
+                    <h2 class="text-xl font-bold text-haven-900 flex items-center gap-2">
+                        <i class="fa-solid fa-store text-haven-600"></i> صالة الكافيه (8 ترابيزات أساسية + ترابيزة العائلات)
+                    </h2>
+                    <p class="text-sm text-gray-500">اختر الترابيزة لإضافة الطلبات، حساب الفاتورة، أو السداد.</p>
+                </div>
+                <div class="flex items-center gap-3 text-sm">
+                    <span class="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full font-medium border border-emerald-200">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> فارغة
+                    </span>
+                    <span class="flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-700 rounded-full font-medium border border-rose-200">
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block animate-pulse"></span> مشغولة
+                    </span>
+                </div>
+            </div>
+
+            <!-- Tables Grid -->
+            <div id="tables-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <!-- Injected via JavaScript -->
+            </div>
+        </section>
+
+        <!-- TAB 2: PLAYSTATION ROOM VIEW -->
+        <section id="tab-room" class="hidden space-y-6 fade-in">
+            <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-haven-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-haven-900 flex items-center gap-2">
+                        <i class="fa-solid fa-gamepad text-haven-600"></i> غرفة البلايستيشن الخاصة
+                    </h2>
+                    <p class="text-sm text-gray-500">حساب الوقت التلقائي (سعر الساعة: 90 جنيه) مع إمكانية إضافة أو تعديل الوقت وطلبات المنيو.</p>
+                </div>
+                <span id="room-status-badge" class="px-4 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    الغرفة متاح حجزها الآن
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Timer Controller -->
+                <div class="lg:col-span-5 bg-white p-6 rounded-2xl shadow-sm border border-haven-200 flex flex-col justify-between space-y-6">
+                    <div class="text-center space-y-3">
+                        <span class="text-xs uppercase tracking-wider text-haven-600 font-bold bg-haven-100 px-3 py-1 rounded-full">عداد الوقت الفعلي (90 ج.م / ساعة)</span>
+                        <div id="room-timer-display" class="text-5xl md:text-6xl font-black text-haven-900 tracking-wider py-4 font-mono">
+                            00:00:00
+                        </div>
+                        
+                        <!-- Manual Time Adder Button -->
+                        <div class="pt-1">
+                            <button onclick="openAddTimeModal()" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 mx-auto">
+                                <i class="fa-solid fa-clock-rotate-left"></i> إضافة وقت يدوي (تصحيح / نسيان)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-haven-50 p-4 rounded-xl border border-haven-200 space-y-2">
+                        <div class="flex justify-between text-sm text-gray-600">
+                            <span>حساب وقت الروم:</span>
+                            <span id="room-time-cost" class="font-bold text-haven-900">0.00 ج.م</span>
+                        </div>
+                        <div class="flex justify-between text-sm text-gray-600">
+                            <span>طلبات المنيو للروم:</span>
+                            <span id="room-items-cost" class="font-bold text-haven-900">0.00 ج.م</span>
+                        </div>
+                        <div class="flex justify-between text-lg font-black text-haven-900 pt-2 border-t border-haven-200">
+                            <span>إجمالي حساب الروم:</span>
+                            <span id="room-total-cost" class="text-haven-700">0.00 ج.م</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="room-action-btn" onclick="toggleRoomTimer()" class="py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition shadow-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-play"></i> بدء العداد
+                        </button>
+                        <button onclick="checkoutRoomSession()" class="py-3 bg-haven-800 hover:bg-haven-900 text-white rounded-xl font-bold text-sm transition shadow-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-cash-register"></i> سداد الروم
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Room Orders -->
+                <div class="lg:col-span-7 bg-white p-6 rounded-2xl shadow-sm border border-haven-200 flex flex-col justify-between space-y-4">
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-3">
+                        <h3 class="font-bold text-haven-900 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-basket-shopping text-haven-600"></i> طلبات المنيو للروم
+                        </h3>
+                        <button onclick="openRoomMenuModal()" class="px-3 py-1.5 bg-haven-700 hover:bg-haven-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus"></i> إضافة صنف
+                        </button>
+                    </div>
+
+                    <div id="room-order-items-list" class="space-y-2.5 min-h-[220px] max-h-[300px] overflow-y-auto pr-1">
+                        <div class="text-center py-12 text-gray-400 text-sm">
+                            <i class="fa-solid fa-mug-hot text-3xl mb-2 block"></i>
+                            لم يتم طلب أصناف لغرفة البلايستيشن.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: MENU VIEW -->
+        <section id="tab-menu" class="hidden space-y-6 fade-in">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-haven-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-haven-900 flex items-center gap-2">
+                        <i class="fa-solid fa-utensils text-haven-600"></i> قائمة أسعار المنيو الرسمية - Cafe Haven
+                    </h2>
+                    <p class="text-sm text-gray-500">جميع الأصناف والأسعار المعتمدة بالمنيو.</p>
+                </div>
+                <div class="w-full md:w-72">
+                    <div class="relative">
+                        <input type="text" id="menu-search-input" oninput="filterMenuCatalog()" placeholder="ابحث عن صنف..." class="w-full pl-4 pr-10 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-haven-600 text-sm">
+                        <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div id="menu-catalog-container" class="space-y-8">
+                <!-- Injected via JavaScript -->
+            </div>
+        </section>
+
+        <!-- TAB 4: INVENTORY VIEW -->
+        <section id="tab-inventory" class="hidden space-y-6 fade-in">
+            <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-haven-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-haven-900 flex items-center gap-2">
+                        <i class="fa-solid fa-boxes-stacked text-haven-600"></i> إدارة البضائع والمخزون
+                    </h2>
+                    <p class="text-sm text-gray-500">متابعة المواد والمخزون المتاح في الكافيه.</p>
+                </div>
+                <button onclick="openAddInventoryModal()" class="px-4 py-2 bg-haven-700 hover:bg-haven-800 text-white rounded-xl text-sm font-semibold transition flex items-center gap-2 shadow-sm">
+                    <i class="fa-solid fa-plus"></i> إضافة صنف للمخزون
+                </button>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-haven-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-haven-50 text-haven-800 font-bold border-b border-gray-200">
+                            <tr>
+                                <th class="p-3">اسم الصنف / المادة</th>
+                                <th class="p-3">الكمية المتاحة</th>
+                                <th class="p-3">الوحدة</th>
+                                <th class="p-3">حد التنبيه</th>
+                                <th class="p-3 text-center">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-tbody" class="divide-y divide-gray-100">
+                            <!-- Injected via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: EXPENSES VIEW -->
+        <section id="tab-expenses" class="hidden space-y-6 fade-in">
+            <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-haven-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-haven-900 flex items-center gap-2">
+                        <i class="fa-solid fa-money-bill-wave text-haven-600"></i> المصاريف اليومية (أجور الشغالين، نثريات، إلخ)
+                    </h2>
+                    <p class="text-sm text-gray-500">تسجيل ومتابعة منصرفات اليوم لتخصيمها من الإيرادات.</p>
+                </div>
+                <button onclick="openAddExpenseModal()" class="px-4 py-2 bg-haven-700 hover:bg-haven-800 text-white rounded-xl text-sm font-semibold transition flex items-center gap-2 shadow-sm">
+                    <i class="fa-solid fa-plus"></i> تسجيل مصروف جديد
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-haven-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">إجمالي مصاريف اليوم</p>
+                        <h3 id="expenses-total-display" class="text-3xl font-black text-rose-700 mt-1">0.00 ج.م</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-receipt"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-haven-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">صافي الإيراد بعد المصاريف</p>
+                        <h3 id="net-revenue-display" class="text-3xl font-black text-emerald-700 mt-1">0.00 ج.م</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-haven-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-haven-50 text-haven-800 font-bold border-b border-gray-200">
+                            <tr>
+                                <th class="p-3">البيان / السبب</th>
+                                <th class="p-3">المبلغ</th>
+                                <th class="p-3">التوقيت</th>
+                                <th class="p-3 text-center">إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenses-tbody" class="divide-y divide-gray-100">
+                            <!-- Injected via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 6: REPORTS & ARCHIVE VIEW -->
+        <section id="tab-reports" class="hidden space-y-6 fade-in">
+            <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-haven-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-haven-900 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-haven-600"></i> الحسابات اليومية وأرشيف الأيام السابقة
+                    </h2>
+                    <p class="text-sm text-gray-500">استعرض الإيرادات والفواتير، أو قم بتصفير اليوم وترحيله تلقائياً للأرشيف التاريخي.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-2 bg-haven-50 px-3 py-2 rounded-xl border border-haven-200">
+                        <label for="report-date-picker" class="text-xs font-bold text-haven-900">التاريخ:</label>
+                        <input type="date" id="report-date-picker" onchange="onDateChanged()" class="bg-white border border-gray-300 rounded-lg px-3 py-1 text-xs font-semibold text-haven-900 focus:outline-none focus:border-haven-600">
+                    </div>
+                    <button onclick="confirmResetAndArchiveDay()" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-md">
+                        <i class="fa-solid fa-box-archive"></i> 🔄 تصفير اليوم وترحيل للأرشيف
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-haven-200">
+                    <p class="text-sm text-gray-500 font-medium">إجمالي الإيرادات</p>
+                    <h3 id="report-total-revenue" class="text-3xl font-black text-haven-900 mt-1">0.00 ج.م</h3>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-haven-200">
+                    <p class="text-sm text-gray-500 font-medium">إيرادات كاش</p>
+                    <h3 id="report-cash-revenue" class="text-3xl font-black text-emerald-700 mt-1">0.00 ج.م</h3>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-haven-200">
+                    <p class="text-sm text-gray-500 font-medium">إيرادات فودافون كاش</p>
+                    <h3 id="report-vodafone-revenue" class="text-3xl font-black text-sky-700 mt-1">0.00 ج.م</h3>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-haven-200">
+                    <p class="text-sm text-gray-500 font-medium">إجمالي المصاريف</p>
+                    <h3 id="report-total-expenses" class="text-3xl font-black text-rose-700 mt-1">0.00 ج.م</h3>
+                </div>
+            </div>
+
+            <!-- Invoices Table -->
+            <div class="bg-white rounded-2xl shadow-sm border border-haven-200 overflow-hidden">
+                <div class="p-4 border-b border-gray-100 font-bold text-haven-900 flex justify-between items-center">
+                    <span>تفاصيل فواتير تاريخ: <span id="current-selected-date-label" class="text-haven-700">--</span></span>
+                    <span class="text-xs text-gray-500">عدد الفواتير: <strong id="report-total-orders-count">0</strong></span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-haven-50 text-haven-800 font-bold border-b border-gray-200">
+                            <tr>
+                                <th class="p-3">رقم الفاتورة</th>
+                                <th class="p-3">المحطة / الترابيزة</th>
+                                <th class="p-3">طريقة الدفع</th>
+                                <th class="p-3">وقت الدفع</th>
+                                <th class="p-3">الأصناف والتفاصيل</th>
+                                <th class="p-3">الإجمالي</th>
+                                <th class="p-3 text-center">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="completed-orders-tbody" class="divide-y divide-gray-100">
+                            <!-- Injected -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ARCHIVE SECTION (Dedicated Archive Space) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-haven-200 overflow-hidden mt-8">
+                <div class="p-5 bg-haven-900 text-white flex justify-between items-center">
+                    <h3 class="font-bold text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-box-archive"></i> أرشيف الأيام السابقة (سجل التصفير والتقارير التاريخية)
+                    </h3>
+                    <span class="text-xs text-haven-200 bg-haven-800 px-3 py-1 rounded-full">محفوظ تلقائياً</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-haven-50 text-haven-800 font-bold border-b border-gray-200">
+                            <tr>
+                                <th class="p-3">تاريخ اليوم المؤرشف</th>
+                                <th class="p-3">إجمالي الإيرادات</th>
+                                <th class="p-3">إجمالي المصاريف</th>
+                                <th class="p-3">صافي الربح</th>
+                                <th class="p-3">عدد الفواتير</th>
+                                <th class="p-3 text-center">إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="archive-table-tbody" class="divide-y divide-gray-100">
+                            <!-- Injected -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL: ADD TIME (MANUAL TIME ADJUSTMENT) -->
+    <div id="add-time-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden fade-in border border-haven-200 p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-haven-900 text-base">إضافة / تعديل وقت الروم يدويًا</h3>
+                <button onclick="closeAddTimeModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-3">
+                <p class="text-xs text-gray-500">اختر عدد الدقائق أو الساعات المراد إضافتها للوقت الحالي:</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="addMinutesToRoom(15)" class="py-2.5 bg-haven-50 hover:bg-haven-100 text-haven-900 font-bold rounded-xl text-xs border border-haven-200">+15 دقيقة</button>
+                    <button onclick="addMinutesToRoom(30)" class="py-2.5 bg-haven-50 hover:bg-haven-100 text-haven-900 font-bold rounded-xl text-xs border border-haven-200">+30 دقيقة</button>
+                    <button onclick="addMinutesToRoom(60)" class="py-2.5 bg-haven-50 hover:bg-haven-100 text-haven-900 font-bold rounded-xl text-xs border border-haven-200">+ساعة (60)</button>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-haven-900 mb-1 mt-2">أو أخلط دقائق مخصصة:</label>
+                    <input type="number" id="custom-minutes-input" placeholder="عدد الدقائق (مثال: 45)" class="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:border-haven-600">
+                </div>
+                <button onclick="addCustomMinutes()" class="w-full py-2.5 bg-haven-700 hover:bg-haven-800 text-white font-bold rounded-xl text-sm shadow-sm">إضافة الوقت المخصص</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: TABLE ORDER MANAGEMENT -->
+    <div id="table-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden fade-in border border-haven-200">
+            <div class="bg-haven-900 text-white px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-haven-700 flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-chair"></i>
+                    </div>
+                    <div>
+                        <h3 id="modal-table-title" class="text-lg font-bold">ترابيزة #</h3>
+                        <p id="modal-table-status" class="text-xs text-haven-200">حالة الترابيزة: فارغة</p>
+                    </div>
+                </div>
+                <button onclick="closeTableModal()" class="w-9 h-9 rounded-full bg-haven-800 hover:bg-haven-700 text-white flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-0">
+                <!-- Left Column: Categories & Menu Grid -->
+                <div class="lg:col-span-7 p-4 md:p-5 overflow-y-auto border-l border-gray-100 bg-gray-50/50 flex flex-col space-y-4">
+                    <div class="space-y-3">
+                        <div class="relative">
+                            <input type="text" id="modal-menu-search" oninput="filterModalMenu()" placeholder="ابحث في المنيو لإضافة صنف..." class="w-full pl-4 pr-10 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-haven-600 text-sm">
+                            <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
+                        </div>
+                        <div id="modal-categories-bar" class="flex items-center gap-1.5 overflow-x-auto pb-1">
+                            <!-- Injected -->
+                        </div>
+                    </div>
+                    <div id="modal-menu-items-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Injected -->
+                    </div>
+                </div>
+
+                <!-- Right Column: Current Table Cart -->
+                <div class="lg:col-span-5 p-4 md:p-6 bg-white flex flex-col justify-between space-y-4 shadow-inner">
+                    <div>
+                        <h4 class="font-bold text-haven-900 text-base mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-receipt text-haven-600"></i> طلبات الترابيزة الحالية
+                        </h4>
+                        <div id="modal-cart-items-list" class="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
+                            <!-- Injected -->
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-100 pt-4 space-y-3">
+                        <div class="flex justify-between items-center text-lg font-black text-haven-900">
+                            <span>إجمالي الفاتورة:</span>
+                            <span id="modal-cart-total" class="text-haven-700 text-2xl">0.00 ج.م</span>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-gray-700 block">طريقة الدفع عند السداد:</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button type="button" onclick="setPaymentMethod('cash')" id="pay-btn-cash" class="py-2 px-3 rounded-xl font-bold text-xs border-2 border-emerald-600 bg-emerald-50 text-emerald-800 transition flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-money-bill-wave"></i> كاش
+                                </button>
+                                <button type="button" onclick="setPaymentMethod('vodafone')" id="pay-btn-vodafone" class="py-2 px-3 rounded-xl font-bold text-xs border-2 border-gray-200 bg-white text-gray-700 transition flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-mobile-screen-button text-sky-600"></i> فودافون كاش
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 pt-2">
+                            <button onclick="printTableReceipt()" class="py-2.5 bg-haven-100 hover:bg-haven-200 text-haven-900 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-print"></i> طباعة الفاتورة
+                            </button>
+                            <button onclick="checkoutTable()" class="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 shadow-sm">
+                                <i class="fa-solid fa-circle-check"></i> دفع وإغلاق
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD EXPENSE -->
+    <div id="expense-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden fade-in border border-haven-200">
+            <div class="bg-haven-900 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-base">تسجيل مصروف يومي جديد</h3>
+                <button onclick="closeExpenseModal()" class="w-8 h-8 rounded-full bg-haven-800 text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-haven-900 mb-1">السبب / بيان المصروف (مثل: أجور الشغالين، كهرباء، نثريات):</label>
+                    <input type="text" id="expense-reason-input" placeholder="اكتب السبب..." class="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:border-haven-600">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-haven-900 mb-1">المبلغ (بالجنيه):</label>
+                    <input type="number" id="expense-amount-input" placeholder="0" class="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:border-haven-600">
+                </div>
+                <button onclick="saveExpense()" class="w-full py-3 bg-haven-700 hover:bg-haven-800 text-white font-bold rounded-xl text-sm transition shadow-sm">
+                    حفظ المصروف
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD INVENTORY -->
+    <div id="inventory-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden fade-in border border-haven-200">
+            <div class="bg-haven-900 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-base">إضافة مادة للمخزون</h3>
+                <button onclick="closeInventoryModal()" class="w-8 h-8 rounded-full bg-haven-800 text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-haven-900 mb-1">اسم المادة / الصنف:</label>
+                    <input type="text" id="inv-name-input" placeholder="مثال: بن تركي، لبن، أكواب..." class="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:border-haven-600">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-haven-900 mb-1">الكمية:</label>
+                        <input type="number" id="inv-qty-input" placeholder="0" class="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:border-haven-600">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-haven-900 mb-1">الوحدة:</label>
+                        <input type="text" id="inv-unit-input" placeholder="كيلو، علبة، كرتونة" class="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:border-haven-600">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-haven-900 mb-1">حد التنبيه للنفاذ:</label>
+                    <input type="number" id="inv-alert-input" placeholder="5" class="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:border-haven-600">
+                </div>
+                <button onclick="saveInventoryItem()" class="w-full py-3 bg-haven-700 hover:bg-haven-800 text-white font-bold rounded-xl text-sm transition shadow-sm">
+                    حفظ في المخزون
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: RECEIPT VIEW / PRINT -->
+    <div id="receipt-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden fade-in p-6 space-y-4 text-center">
+            <div id="receipt-print-area" class="space-y-3 text-right bg-haven-50 p-4 rounded-2xl border border-haven-200">
+                <div class="text-center border-b pb-3">
+                    <h3 class="font-black text-xl text-haven-900">Cafe Haven</h3>
+                    <p class="text-xs text-gray-500">في قهوتي شئ من تفاصيلك ✨</p>
+                    <p id="receipt-date-time" class="text-xs text-gray-400 mt-1"></p>
+                </div>
+                <div id="receipt-details-content" class="text-xs space-y-1">
+                    <!-- Injected -->
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="closeReceiptModal()" class="flex-1 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-xl text-xs">إغلاق</button>
+                <button onclick="window.print()" class="flex-1 py-2.5 bg-haven-700 hover:bg-haven-800 text-white font-bold rounded-xl text-xs">طباعة الآن</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Modal for Custom Alerts -->
+    <div id="custom-alert-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+            <div id="custom-alert-icon" class="w-12 h-12 rounded-full bg-amber-100 text-amber-700 mx-auto flex items-center justify-center text-xl font-bold">
+                <i class="fa-solid fa-info"></i>
+            </div>
+            <h4 id="custom-alert-title" class="font-bold text-lg text-haven-900">تنبيه</h4>
+            <p id="custom-alert-message" class="text-sm text-gray-600">رسالة التنبيه هنا</p>
+            <button onclick="closeCustomAlert()" class="w-full py-2.5 bg-haven-700 text-white font-bold rounded-xl text-sm">حسناً</button>
+        </div>
+    </div>
+
+    <!-- APPLICATION JAVASCRIPT -->
+    <script>
+        const menuCatalog = [
+            { category: "هوت درينك", items: [
+                { name: "شاي بريك فاست", price: 25 },
+                { name: "شاي فروت", price: 35 },
+                { name: "هوت سيدار", price: 50 },
+                { name: "شاي كرك", price: 60 },
+                { name: "نسكافيه", price: 60 }
+            ]},
+            { category: "تركي", items: [
+                { name: "قهوة تركي", price: 30 },
+                { name: "قهوة تركي محوج", price: 35 },
+                { name: "قهوة تركي غامق", price: 35 },
+                { name: "قهوة العميد", price: 50 }
+            ]},
+            { category: "كلاسيك فرنسوي", items: [
+                { name: "فرنساوي", price: 60 },
+                { name: "بندق", price: 60 },
+                { name: "قرفه", price: 60 },
+                { name: "نيوتيلا", price: 70 },
+                { name: "لوتس", price: 70 }
+            ]},
+            { category: "هوت شوكلت", items: [
+                { name: "هوت شوكلت دارك", price: 70 },
+                { name: "هوت شوكلت أوريو", price: 80 },
+                { name: "هوت شوكلت وايت كراميل", price: 80 },
+                { name: "هوت شوكلت مارشيميلو", price: 80 },
+                { name: "هوت شوكلت ويب كريم", price: 80 },
+                { name: "هوت شوكلت لوتس", price: 80 },
+                { name: "هوت شوكلت مالتيزرز", price: 100 },
+                { name: "هوت شوكلت تراميسو", price: 100 }
+            ]},
+            { category: "هوت اسبرسو", items: [
+                { name: "ديبل", price: 50 },
+                { name: "كروتادو", price: 70 },
+                { name: "فلات وايت", price: 70 },
+                { name: "امريكان", price: 80 },
+                { name: "كابتشينو", price: 80 },
+                { name: "ماشا", price: 80 },
+                { name: "سولتند كراميل", price: 100 },
+                { name: "وايت دراك موكا", price: 100 },
+                { name: "اسبانش", price: 100 },
+                { name: "اسبرسو افوكادو", price: 120 }
+            ]},
+            { category: "قهوة فلتر", items: [
+                { name: "V60 كولومبي", price: 120 },
+                { name: "V60 اريكيًا", price: 120 },
+                { name: "V60 رواندي", price: 120 },
+                { name: "Cold coffee", price: 120 }
+            ]},
+            { category: "ايس كوفي", items: [
+                { name: "ايس امريكان", price: 80 },
+                { name: "ايس لاتيه", price: 80 },
+                { name: "ايس سواتد كراميل", price: 100 },
+                { name: "ايس كراميل ميكاتو", price: 100 },
+                { name: "ايس اسبانش لاتيه", price: 100 },
+                { name: "ايس كريم بروليه", price: 100 },
+                { name: "ايس موكا", price: 100 },
+                { name: "ايس لاتيه ميجا", price: 120 },
+                { name: "ايس لاتيه بوبا", price: 120 },
+                { name: "ماتشا", price: 120 }
+            ]},
+            { category: "فرابيه", items: [
+                { name: "فرابيه موكا", price: 100 },
+                { name: "فرابيه كوفي", price: 100 },
+                { name: "فرابيه وايت موكا", price: 100 },
+                { name: "فرابيه كراميل", price: 100 },
+                { name: "فرابيه تشيز كيك", price: 120 },
+                { name: "فرابيه كوفي كريمي", price: 120 },
+                { name: "فرابيه كوكيز", price: 150 }
+            ]},
+            { category: "فريش", items: [
+                { name: "مانجا", price: 70 },
+                { name: "فراولة", price: 70 },
+                { name: "برتقال", price: 70 },
+                { name: "ليمون", price: 70 },
+                { name: "كيوي", price: 100 },
+                { name: "افوكادو", price: 100 },
+                { name: "افوكادو مكسرات", price: 120 }
+            ]},
+            { category: "صودا", items: [
+                { name: "موهيتو كلاسيك", price: 80 },
+                { name: "موهيتو فيلفر", price: 100 },
+                { name: "بلو باشون", price: 100 },
+                { name: "بلو بينتش", price: 100 },
+                { name: "شيري كولا", price: 80 },
+                { name: "جيلي كولا", price: 80 },
+                { name: "يوسفي فراولة كلاودي", price: 120 },
+                { name: "جيلي أناناس كلاودي", price: 120 },
+                { name: "مانجا فراولة كلاودي", price: 120 },
+                { name: "كيوي تفاح أخضر كلاودي", price: 120 },
+                { name: "جوز هند أناناس تفاح", price: 120 },
+                { name: "رد بول فلفير", price: 100 }
+            ]},
+            { category: "ميلك شيك", items: [
+                { name: "ميلك شيك مانجا", price: 80 },
+                { name: "ميلك شيك باشون", price: 80 },
+                { name: "ميلك شيك تشيز كيك", price: 100 },
+                { name: "ميلك شيك براونيز", price: 100 },
+                { name: "ميلك شيك كاجو", price: 100 },
+                { name: "ميلك شيك بلوبيري", price: 100 },
+                { name: "ميلك شيك أوريو", price: 100 },
+                { name: "ميلك شيك كيندار", price: 120 },
+                { name: "ميلك شيك لوتس", price: 120 },
+                { name: "ميلك شيك فستق", price: 150 },
+                { name: "ميلك شيك نيوتيلا", price: 120 }
+            ]},
+            { category: "ايس شوكلت", items: [
+                { name: "ايس شوكلت دارك", price: 80 },
+                { name: "ايس شوكلت نيوتيلا", price: 100 },
+                { name: "ايس شوكلت براونيز", price: 100 },
+                { name: "ايس شوكلت كراميل", price: 100 },
+                { name: "ايس شوكلت لوتس", price: 100 }
+            ]},
+            { category: "ايس بوبا", items: [
+                { name: "ايس بوبا فراوله", price: 80 },
+                { name: "ايس بوبا مانجا", price: 80 },
+                { name: "ايس بوبا بلوبيري", price: 80 },
+                { name: "ايس بوبا خوخ", price: 80 }
+            ]},
+            { category: "وافل", items: [
+                { name: "وافل نيوتيلا", price: 100 },
+                { name: "وافل أوريو", price: 120 },
+                { name: "وافل وايت شوكلت", price: 120 },
+                { name: "وافل كيندار", price: 120 },
+                { name: "وافل لوتس", price: 120 },
+                { name: "وافل فروت", price: 120 },
+                { name: "وافل فروحا", price: 120 },
+                { name: "وافل ميجا", price: 120 },
+                { name: "وافل ويتش", price: 120 }
+            ]},
+            { category: "الديزرت", items: [
+                { name: "كوكيز", price: 80 },
+                { name: "كوكيز تارت", price: 120 },
+                { name: "براونيز", price: 100 },
+                { name: "تشيز كيك", price: 100 },
+                { name: "تراميسو", price: 100 },
+                { name: "مولتن كيك", price: 100 },
+                { name: "مولتن ميجا", price: 120 },
+                { name: "سان سباستين", price: 120 },
+                { name: "هاني كيك", price: 100 },
+                { name: "روشيه بندق", price: 100 },
+                { name: "موسي جلاكسي", price: 100 },
+                { name: "دراجون بولز", price: 100 },
+                { name: "كرواسو", price: 80 },
+                { name: "كرواسو باستري", price: 120 }
+            ]},
+            { category: "اضافات", items: [
+                { name: "ويپ كريم صوص مارشميلو", price: 25 }
+            ]},
+            { category: "سوفت درينك", items: [
+                { name: "مياه", price: 10 },
+                { name: "بيبسي", price: 40 },
+                { name: "بيبسي فري", price: 40 },
+                { name: "في كولا", price: 40 },
+                { name: "في كولا فري", price: 40 },
+                { name: "رد بول", price: 90 },
+                { name: "رد بول فري", price: 90 },
+                { name: "رد بول توت", price: 90 },
+                { name: "رد بول وايت", price: 90 }
+            ]},
+            { category: "شيشة", items: [
+                { name: "شيشة إيمي", price: 120 },
+                { name: "شيشة تببول", price: 100 }
+            ]}
+        ];
+
+        let currentActiveTab = 'tables';
+        let selectedDate = new Date().toISOString().split('T')[0];
+        let selectedCategoryFilter = 'الكل';
+        
+        let tablesData = {
+            1: { name: "ترابيزة 1", type: "normal", occupied: false, order: [], paymentMethod: 'cash' },
+            2: { name: "ترابيزة 2", type: "normal", occupied: false, order: [], paymentMethod: 'cash' },
+            3: { name: "ترابيزة 3", type: "normal", occupied: false, order: [], paymentMethod: 'cash' },
+            4: { name: "ترابيزة 4", type: "normal", occupied: false, order: [], paymentMethod: 'cash' },
+            5: { name: "ترابيزة 5", type: "normal", occupied: false, order: [], paymentMethod: 'cash' },
+            6: { name: "ترابيزة 6", type: "normal", occupied: false, order: [], paymentMethod: 'cash' },
+            7: { name: "ترابيزة 7", type: "normal", occupied: false, order: [], paymentMethod: 'cash' },
+            8: { name: "ترابيزة 8", type: "normal", occupied: false, order: [], paymentMethod: 'cash' },
+            'family': { name: "قاعدة العائلات 👨‍👩‍👧‍👦", type: "family", occupied: false, order: [], paymentMethod: 'cash' }
+        };
+
+        let currentActiveTableId = null;
+
+        // PlayStation Room State
+        let roomState = {
+            isRunning: false,
+            startTime: null,
+            elapsedSeconds: 0,
+            timerInterval: null,
+            order: [],
+            paymentMethod: 'cash'
+        };
+        const ROOM_HOURLY_RATE = 90; // 90 EGP per hour -> 1.5 EGP per minute -> 0.025 EGP per second
+
+        // Main Store with Archive Support
+        let appStore = JSON.parse(localStorage.getItem('cafe_haven_store_v6')) || {
+            days: {},
+            archive: []
+        };
+
+        let inventoryList = JSON.parse(localStorage.getItem('cafe_haven_inventory')) || [
+            { id: 1, name: "بن تركي ممتاز", qty: 15, unit: "كيلو", alert: 3 },
+            { id: 2, name: "حليب طازج", qty: 20, unit: "لتر", alert: 5 },
+            { id: 3, name: "أكواب ورقية وسط", qty: 250, unit: "قطعة", alert: 30 },
+            { id: 4, name: "بيبسي علب", qty: 48, unit: "كنز", alert: 10 },
+            { id: 5, name: "شاي ليبتون", qty: 5, unit: "علبة", alert: 1 }
+        ];
+
+        function getTodayData() {
+            if (!appStore.days[selectedDate]) {
+                appStore.days[selectedDate] = {
+                    completedOrders: [],
+                    expenses: []
+                };
+            }
+            return appStore.days[selectedDate];
+        }
+
+        function saveStore() {
+            localStorage.setItem('cafe_haven_store_v6', JSON.stringify(appStore));
+            localStorage.setItem('cafe_haven_inventory', JSON.stringify(inventoryList));
+        }
+
+        window.onload = function() {
+            document.getElementById('report-date-picker').value = selectedDate;
+            renderTablesGrid();
+            renderMenuCatalog();
+            renderInventoryTable();
+            renderExpenses();
+            renderReportsData();
+            renderArchiveTable();
+            updateHeaderTotals();
+            setInterval(updateRoomTimer, 200); // 200ms for smooth real-time decimal calculation
+        };
+
+        function switchTab(tabId) {
+            currentActiveTab = tabId;
+            const tabs = ['tables', 'room', 'menu', 'inventory', 'expenses', 'reports'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (t === tabId) {
+                    el.classList.remove('hidden');
+                    btn.className = "px-3.5 py-2 rounded-lg bg-haven-700 text-white font-semibold text-sm transition shadow flex items-center gap-2 whitespace-nowrap";
+                } else {
+                    el.classList.add('hidden');
+                    btn.className = "px-3.5 py-2 rounded-lg bg-haven-800 text-haven-100 hover:bg-haven-700 font-semibold text-sm transition flex items-center gap-2 whitespace-nowrap";
+                }
+            });
+            if (tabId === 'reports') {
+                renderReportsData();
+                renderArchiveTable();
+            }
+        }
+
+        function showAlert(title, message, isSuccess = true) {
+            document.getElementById('custom-alert-title').innerText = title;
+            document.getElementById('custom-alert-message').innerText = message;
+            const iconEl = document.getElementById('custom-alert-icon');
+            if (isSuccess) {
+                iconEl.className = "w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 mx-auto flex items-center justify-center text-xl font-bold";
+                iconEl.innerHTML = '<i class="fa-solid fa-check"></i>';
+            } else {
+                iconEl.className = "w-12 h-12 rounded-full bg-rose-100 text-rose-700 mx-auto flex items-center justify-center text-xl font-bold";
+                iconEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            }
+            document.getElementById('custom-alert-modal').classList.remove('hidden');
+        }
+
+        function closeCustomAlert() {
+            document.getElementById('custom-alert-modal').classList.add('hidden');
+        }
+
+        // 1. Tables Management
+        function renderTablesGrid() {
+            const grid = document.getElementById('tables-grid');
+            grid.innerHTML = '';
+            let activeCount = 0;
+
+            Object.keys(tablesData).forEach(key => {
+                const table = tablesData[key];
+                if (table.occupied) activeCount++;
+
+                const card = document.createElement('div');
+                card.className = `p-5 rounded-2xl border-2 transition cursor-pointer flex flex-col justify-between h-44 shadow-sm ${
+                    table.occupied 
+                        ? 'bg-rose-50/70 border-rose-300 hover:border-rose-400' 
+                        : 'bg-white border-haven-200 hover:border-haven-600'
+                }`;
+                card.onclick = () => openTableModal(key);
+
+                let totalAmt = table.order.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="w-10 h-10 rounded-xl ${table.occupied ? 'bg-rose-500 text-white' : 'bg-haven-100 text-haven-800'} flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid ${table.type === 'family' ? 'fa-people-roof' : 'fa-chair'}"></i>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold ${table.occupied ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}">
+                            ${table.occupied ? 'مشغولة' : 'فارغة'}
+                        </span>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-haven-900 text-base">${table.name}</h3>
+                        <p class="text-xs text-gray-500 mt-0.5">${table.order.length} أصناف مضافة</p>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-gray-100">
+                        <span class="text-xs text-gray-400">الإجمالي:</span>
+                        <span class="font-black text-haven-900 text-base">${totalAmt.toFixed(2)} ج.م</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            document.getElementById('active-tables-count').innerText = activeCount;
+        }
+
+        function openTableModal(tableId) {
+            currentActiveTableId = tableId;
+            const table = tablesData[tableId];
+            document.getElementById('modal-table-title').innerText = table.name;
+            document.getElementById('modal-table-status').innerText = table.occupied ? 'حالة الترابيزة: مشغولة حالياً' : 'حالة الترابيزة: فارغة وجاهزة للطلبات';
+            
+            setPaymentMethod(table.paymentMethod || 'cash');
+            selectedCategoryFilter = 'الكل';
+            renderModalCategoriesBar();
+            renderModalMenu();
+            renderModalCart();
+            document.getElementById('table-modal').classList.remove('hidden');
+        }
+
+        function closeTableModal() {
+            document.getElementById('table-modal').classList.add('hidden');
+            currentActiveTableId = null;
+            renderTablesGrid();
+            updateHeaderTotals();
+        }
+
+        function setPaymentMethod(method) {
+            tablesData[currentActiveTableId].paymentMethod = method;
+            const cashBtn = document.getElementById('pay-btn-cash');
+            const vodafoneBtn = document.getElementById('pay-btn-vodafone');
+            if (method === 'cash') {
+                cashBtn.className = "py-2 px-3 rounded-xl font-bold text-xs border-2 border-emerald-600 bg-emerald-50 text-emerald-800 transition flex items-center justify-center gap-1.5";
+                vodafoneBtn.className = "py-2 px-3 rounded-xl font-bold text-xs border-2 border-gray-200 bg-white text-gray-700 transition flex items-center justify-center gap-1.5";
+            } else {
+                vodafoneBtn.className = "py-2 px-3 rounded-xl font-bold text-xs border-2 border-sky-600 bg-sky-50 text-sky-800 transition flex items-center justify-center gap-1.5";
+                cashBtn.className = "py-2 px-3 rounded-xl font-bold text-xs border-2 border-gray-200 bg-white text-gray-700 transition flex items-center justify-center gap-1.5";
+            }
+        }
+
+        function renderModalCategoriesBar() {
+            const bar = document.getElementById('modal-categories-bar');
+            bar.innerHTML = '';
+            
+            const allBtn = document.createElement('button');
+            allBtn.type = "button";
+            allBtn.className = `px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition ${selectedCategoryFilter === 'الكل' ? 'bg-haven-700 text-white shadow-sm' : 'bg-white text-haven-800 border border-haven-200 hover:bg-haven-50'}`;
+            allBtn.innerText = "الكل";
+            allBtn.onclick = () => { selectedCategoryFilter = 'الكل'; renderModalCategoriesBar(); renderModalMenu(); };
+            bar.appendChild(allBtn);
+
+            menuCatalog.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.type = "button";
+                btn.className = `px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition ${selectedCategoryFilter === cat.category ? 'bg-haven-700 text-white shadow-sm' : 'bg-white text-haven-800 border border-haven-200 hover:bg-haven-50'}`;
+                btn.innerText = cat.category;
+                btn.onclick = () => { selectedCategoryFilter = cat.category; renderModalCategoriesBar(); renderModalMenu(); };
+                bar.appendChild(btn);
+            });
+        }
+
+        function renderModalMenu() {
+            const container = document.getElementById('modal-menu-items-grid');
+            container.innerHTML = '';
+            const query = document.getElementById('modal-menu-search').value.toLowerCase();
+
+            menuCatalog.forEach(cat => {
+                if (selectedCategoryFilter !== 'الكل' && cat.category !== selectedCategoryFilter) return;
+
+                cat.items.forEach(item => {
+                    if (item.name.toLowerCase().includes(query) || cat.category.toLowerCase().includes(query)) {
+                        const div = document.createElement('div');
+                        div.className = "bg-white p-3 rounded-xl border border-gray-200 hover:border-haven-600 transition flex justify-between items-center cursor-pointer shadow-sm";
+                        div.onclick = () => addItemToTableCart(item.name, item.price);
+                        div.innerHTML = `
+                            <div>
+                                <h5 class="font-bold text-haven-900 text-xs">${item.name}</h5>
+                                <span class="text-[10px] text-gray-400 bg-haven-50 px-2 py-0.5 rounded-md inline-block mt-1">${cat.category}</span>
+                            </div>
+                            <span class="font-black text-haven-700 text-xs bg-haven-100 px-2.5 py-1 rounded-lg">${item.price} ج.م</span>
+                        `;
+                        container.appendChild(div);
+                    }
+                });
+            });
+        }
+
+        function filterModalMenu() {
+            renderModalMenu();
+        }
+
+        function addItemToTableCart(name, price) {
+            const table = tablesData[currentActiveTableId];
+            table.occupied = true;
+            const existing = table.order.find(i => i.name === name);
+            if (existing) {
+                existing.qty++;
+            } else {
+                table.order.push({ name, price: Number(price), qty: 1 });
+            }
+            renderModalCart();
+        }
+
+        function changeCartItemQty(name, delta) {
+            const table = tablesData[currentActiveTableId];
+            const item = table.order.find(i => i.name === name);
+            if (item) {
+                item.qty += delta;
+                if (item.qty <= 0) {
+                    table.order = table.order.filter(i => i.name !== name);
+                }
+            }
+            if (table.order.length === 0) {
+                table.occupied = false;
+            }
+            renderModalCart();
+        }
+
+        function renderModalCart() {
+            const container = document.getElementById('modal-cart-items-list');
+            const table = tablesData[currentActiveTableId];
+            container.innerHTML = '';
+
+            if (table.order.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-gray-400 text-xs">لم يتم إضافة أصناف للترابيزة بعد</div>`;
+                document.getElementById('modal-cart-total').innerText = "0.00 ج.م";
+                return;
+            }
+
+            let total = 0;
+            table.order.forEach(item => {
+                const itemTotal = Number(item.price) * Number(item.qty);
+                total += itemTotal;
+                const row = document.createElement('div');
+                row.className = "flex justify-between items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100 text-xs";
+                row.innerHTML = `
+                    <div class="flex-1">
+                        <span class="font-bold text-haven-900 block">${item.name}</span>
+                        <span class="text-gray-500">${item.price} ج.م للواحدة</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="changeCartItemQty('${item.name}', -1)" class="w-6 h-6 rounded-lg bg-gray-200 text-gray-700 font-bold flex items-center justify-center hover:bg-gray-300">-</button>
+                        <span class="font-bold w-5 text-center">${item.qty}</span>
+                        <button onclick="changeCartItemQty('${item.name}', 1)" class="w-6 h-6 rounded-lg bg-haven-700 text-white font-bold flex items-center justify-center hover:bg-haven-600">+</button>
+                    </div>
+                    <span class="font-black text-haven-900 w-20 text-left">${itemTotal.toFixed(2)} ج.م</span>
+                `;
+                container.appendChild(row);
+            });
+
+            document.getElementById('modal-cart-total').innerText = total.toFixed(2) + " ج.م";
+        }
+
+        function checkoutTable() {
+            const table = tablesData[currentActiveTableId];
+            if (table.order.length === 0) {
+                showAlert("تنبيه", "لا توجد طلبات لتسجيلها وسدادها!", false);
+                return;
+            }
+
+            const total = table.order.reduce((sum, i) => sum + (Number(i.price) * Number(i.qty)), 0);
+            const todayData = getTodayData();
+
+            const orderRecord = {
+                id: "HAVEN-" + Math.floor(1000 + Math.random() * 9000),
+                station: table.name,
+                paymentMethod: table.paymentMethod,
+                time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+                items: JSON.parse(JSON.stringify(table.order)),
+                total: Number(total.toFixed(2))
+            };
+
+            todayData.completedOrders.push(orderRecord);
+            saveStore();
+
+            table.occupied = false;
+            table.order = [];
+
+            closeTableModal();
+            showAlert("تم بنجاح", `تم تسجيل وسداد فاتورة ${table.name} بقيمة ${total.toFixed(2)} جنيه (${table.paymentMethod === 'cash' ? 'كاش' : 'فودافون كاش'}) بنجاح!`);
+            updateHeaderTotals();
+        }
+
+        function printTableReceipt() {
+            const table = tablesData[currentActiveTableId];
+            if (table.order.length === 0) {
+                showAlert("تنبيه", "لا توجد طلبات لطباعتها!", false);
+                return;
+            }
+            const total = table.order.reduce((sum, i) => sum + (Number(i.price) * Number(i.qty)), 0);
+            document.getElementById('receipt-date-time').innerText = new Date().toLocaleString('ar-EG');
+            
+            let html = `<div class="font-bold border-b pb-2 mb-2">فاتورة مبدئية - ${table.name}</div>`;
+            table.order.forEach(i => {
+                html += `<div class="flex justify-between"><span>${i.name} (x${i.qty})</span><span>${(Number(i.price) * Number(i.qty)).toFixed(2)} ج.م</span></div>`;
+            });
+            html += `<div class="border-t pt-2 mt-2 flex justify-between font-black text-sm"><span>الإجمالي:</span><span>${total.toFixed(2)} ج.م</span></div>`;
+            
+            document.getElementById('receipt-details-content').innerHTML = html;
+            document.getElementById('receipt-modal').classList.remove('hidden');
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receipt-modal').classList.add('hidden');
+        }
+
+        // 2. PlayStation Room Functions (Precise coins/piasters decimal calculation + Manual Time Adding)
+        function toggleRoomTimer() {
+            if (!roomState.isRunning) {
+                roomState.isRunning = true;
+                roomState.startTime = Date.now() - (roomState.elapsedSeconds * 1000);
+                document.getElementById('room-action-btn').innerHTML = `<i class="fa-solid fa-pause"></i> إيقاف مؤقت`;
+                document.getElementById('room-action-btn').className = "py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-sm transition shadow-sm flex items-center justify-center gap-2";
+                document.getElementById('room-status-badge').className = "px-4 py-1.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200";
+                document.getElementById('room-status-badge').innerText = "غرفة البلايستيشن مشغولة الآن";
+            } else {
+                roomState.isRunning = false;
+                document.getElementById('room-action-btn').innerHTML = `<i class="fa-solid fa-play"></i> استئناف العداد`;
+                document.getElementById('room-action-btn').className = "py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition shadow-sm flex items-center justify-center gap-2";
+            }
+        }
+
+        function updateRoomTimer() {
+            if (roomState.isRunning && roomState.startTime) {
+                roomState.elapsedSeconds = Math.floor((Date.now() - roomState.startTime) / 1000);
+            }
+            const hrs = String(Math.floor(roomState.elapsedSeconds / 3600)).padStart(2, '0');
+            const mins = String(Math.floor((roomState.elapsedSeconds % 3600) / 60)).padStart(2, '0');
+            const secs = String(roomState.elapsedSeconds % 60).padStart(2, '0');
+            
+            document.getElementById('room-timer-display').innerText = `${hrs}:${mins}:${secs}`;
+
+            // Precise calculation: 90 EGP / 3600 seconds = 0.025 EGP per second (handles piasters/qروش smoothly)
+            const timeCost = (roomState.elapsedSeconds / 3600) * ROOM_HOURLY_RATE;
+            const itemsCost = roomState.order.reduce((sum, i) => sum + (Number(i.price) * Number(i.qty)), 0);
+            const totalRoomCost = timeCost + itemsCost;
+            
+            document.getElementById('room-time-cost').innerText = timeCost.toFixed(2) + " ج.م";
+            document.getElementById('room-items-cost').innerText = itemsCost.toFixed(2) + " ج.م";
+            document.getElementById('room-total-cost').innerText = totalRoomCost.toFixed(2) + " ج.م";
+        }
+
+        // Manual Time Adder Modals & Functions
+        function openAddTimeModal() {
+            document.getElementById('add-time-modal').classList.remove('hidden');
+        }
+
+        function closeAddTimeModal() {
+            document.getElementById('add-time-modal').classList.add('hidden');
+            document.getElementById('custom-minutes-input').value = '';
+        }
+
+        function addMinutesToRoom(minutes) {
+            roomState.elapsedSeconds += (minutes * 60);
+            if (roomState.isRunning && roomState.startTime) {
+                roomState.startTime -= (minutes * 60 * 1000);
+            }
+            updateRoomTimer();
+            closeAddTimeModal();
+            showAlert("تم التعديل", `تم إضافة ${minutes} دقيقة إلى وقت الغرفة بنجاح!`);
+        }
+
+        function addCustomMinutes() {
+            const val = Number(document.getElementById('custom-minutes-input').value);
+            if (!val || val <= 0) {
+                alert("برجاء إدخال عدد دقائق صحيح!");
+                return;
+            }
+            addMinutesToRoom(val);
+        }
+
+        function openRoomMenuModal() {
+            let itemName = prompt("اكتب اسم الصنف المطلوب للروم:");
+            if (!itemName) return;
+            let itemPrice = prompt("اكتب السعر:", "50");
+            if (!itemPrice) return;
+
+            const existing = roomState.order.find(i => i.name === itemName);
+            if (existing) {
+                existing.qty++;
+            } else {
+                roomState.order.push({ name: itemName, price: Number(itemPrice), qty: 1 });
+            }
+            renderRoomOrdersList();
+            updateRoomTimer();
+        }
+
+        function renderRoomOrdersList() {
+            const container = document.getElementById('room-order-items-list');
+            container.innerHTML = '';
+            if (roomState.order.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 text-gray-400 text-sm"><i class="fa-solid fa-mug-hot text-3xl mb-2 block"></i>لم يتم طلب أصناف لغرفة البلايستيشن.</div>`;
+                return;
+            }
+
+            roomState.order.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100 text-xs";
+                div.innerHTML = `
+                    <div>
+                        <span class="font-bold text-haven-900 block">${item.name}</span>
+                        <span class="text-gray-500">${item.price} ج.م (الكمية: ${item.qty})</span>
+                    </div>
+                    <button onclick="roomState.order.splice(${index}, 1); renderRoomOrdersList(); updateRoomTimer();" class="text-rose-500 hover:text-rose-700 font-bold p-1"><i class="fa-solid fa-trash"></i></button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function checkoutRoomSession() {
+            if (roomState.elapsedSeconds === 0 && roomState.order.length === 0) {
+                showAlert("تنبيه", "لا يوجد وقت مسجل أو طلبات للروم!", false);
+                return;
+            }
+
+            if (roomState.isRunning) {
+                toggleRoomTimer();
+            }
+
+            const timeCost = (roomState.elapsedSeconds / 3600) * ROOM_HOURLY_RATE;
+            const itemsCost = roomState.order.reduce((sum, i) => sum + (Number(i.price) * Number(i.qty)), 0);
+            const total = Number((timeCost + itemsCost).toFixed(2));
+
+            const payMethod = confirm("هل الدفع كاش؟ (اضغط OK للكاش، أو Cancel لفودافون كاش)") ? 'cash' : 'vodafone';
+
+            let orderDetails = [{ name: `وقت بلايستيشن (${(roomState.elapsedSeconds/60).toFixed(1)} دقيقة)`, price: Number(timeCost.toFixed(2)), qty: 1 }];
+            roomState.order.forEach(i => orderDetails.push(i));
+
+            const todayData = getTodayData();
+            todayData.completedOrders.push({
+                id: "ROOM-" + Math.floor(1000 + Math.random() * 9000),
+                station: "غرفة البلايستيشن 🎮",
+                paymentMethod: payMethod,
+                time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+                items: orderDetails,
+                total: total
+            });
+
+            saveStore();
+
+            roomState = { isRunning: false, startTime: null, elapsedSeconds: 0, timerInterval: null, order: [], paymentMethod: 'cash' };
+            document.getElementById('room-timer-display').innerText = "00:00:00";
+            document.getElementById('room-time-cost').innerText = "0.00 ج.م";
+            document.getElementById('room-items-cost').innerText = "0.00 ج.م";
+            document.getElementById('room-total-cost').innerText = "0.00 ج.م";
+            document.getElementById('room-status-badge').className = "px-4 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200";
+            document.getElementById('room-status-badge').innerText = "الغرفة متاح حجزها الآن";
+            document.getElementById('room-action-btn').innerHTML = `<i class="fa-solid fa-play"></i> بدء العداد`;
+            document.getElementById('room-action-btn').className = "py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition shadow-sm flex items-center justify-center gap-2";
+            renderRoomOrdersList();
+
+            showAlert("تم بنجاح", `تم سداد غرفة البلايستيشن بإجمالي ${total.toFixed(2)} جنيه (${payMethod === 'cash' ? 'كاش' : 'فودافون كاش'}) بنجاح!`);
+            updateHeaderTotals();
+        }
+
+        // 3. Menu Catalog View
+        function renderMenuCatalog() {
+            const container = document.getElementById('menu-catalog-container');
+            container.innerHTML = '';
+            const searchVal = document.getElementById('menu-search-input') ? document.getElementById('menu-search-input').value.toLowerCase() : '';
+
+            menuCatalog.forEach(cat => {
+                const filteredItems = cat.items.filter(i => i.name.toLowerCase().includes(searchVal) || cat.category.toLowerCase().includes(searchVal));
+                if (filteredItems.length === 0) return;
+
+                const section = document.createElement('div');
+                section.className = "bg-white p-6 rounded-2xl shadow-sm border border-haven-200 space-y-4";
+                section.innerHTML = `
+                    <h3 class="font-bold text-haven-900 text-lg border-b border-gray-100 pb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-mug-hot text-haven-600"></i> ${cat.category}
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        ${filteredItems.map(item => `
+                            <div class="p-3 rounded-xl bg-haven-50/50 border border-haven-100 flex justify-between items-center">
+                                <span class="font-semibold text-haven-900 text-sm">${item.name}</span>
+                                <span class="font-black text-haven-700 text-sm bg-white px-2.5 py-1 rounded-lg border border-haven-200">${item.price} ج.م</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(section);
+            });
+        }
+
+        function filterMenuCatalog() {
+            renderMenuCatalog();
+        }
+
+        // 4. Inventory Functions
+        function renderInventoryTable() {
+            const tbody = document.getElementById('inventory-tbody');
+            tbody.innerHTML = '';
+
+            inventoryList.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = item.qty <= item.alert ? 'bg-rose-50/50' : '';
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-haven-900">${item.name}</td>
+                    <td class="p-3 font-semibold ${item.qty <= item.alert ? 'text-rose-600' : 'text-gray-700'}">${item.qty}</td>
+                    <td class="p-3 text-gray-500">${item.unit}</td>
+                    <td class="p-3 text-gray-400">${item.alert}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="adjustInventoryQty(${item.id}, 1)" class="px-2 py-1 bg-emerald-100 text-emerald-800 rounded font-bold text-xs ml-1">+ زيادة</button>
+                        <button onclick="adjustInventoryQty(${item.id}, -1)" class="px-2 py-1 bg-amber-100 text-amber-800 rounded font-bold text-xs ml-1">- نقص</button>
+                        <button onclick="deleteInventoryItem(${item.id})" class="text-rose-500 hover:text-rose-700 text-xs font-bold px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openAddInventoryModal() {
+            document.getElementById('inventory-modal').classList.remove('hidden');
+        }
+
+        function closeInventoryModal() {
+            document.getElementById('inventory-modal').classList.add('hidden');
+        }
+
+        function saveInventoryItem() {
+            const name = document.getElementById('inv-name-input').value;
+            const qty = Number(document.getElementById('inv-qty-input').value);
+            const unit = document.getElementById('inv-unit-input').value;
+            const alert = Number(document.getElementById('inv-alert-input').value);
+
+            if (!name) {
+                showAlert("تنبيه", "برجاء كتابة اسم الصنف!", false);
+                return;
+            }
+
+            inventoryList.push({ id: Date.now(), name, qty, unit, alert: alert || 5 });
+            saveStore();
+            closeInventoryModal();
+            renderInventoryTable();
+            showAlert("تم", "تم إضافة الصنف للمخزون بنجاح!");
+        }
+
+        function adjustInventoryQty(id, delta) {
+            const item = inventoryList.find(i => i.id === id);
+            if (item) {
+                item.qty = Math.max(0, item.qty + delta);
+                saveStore();
+                renderInventoryTable();
+            }
+        }
+
+        function deleteInventoryItem(id) {
+            inventoryList = inventoryList.filter(i => i.id !== id);
+            saveStore();
+            renderInventoryTable();
+        }
+
+        // 5. Expenses Functions
+        function renderExpenses() {
+            const todayData = getTodayData();
+            const tbody = document.getElementById('expenses-tbody');
+            tbody.innerHTML = '';
+
+            let totalExp = 0;
+            todayData.expenses.forEach((exp, index) => {
+                totalExp += exp.amount;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-haven-900">${exp.reason}</td>
+                    <td class="p-3 font-black text-rose-700">${exp.amount.toFixed(2)} ج.م</td>
+                    <td class="p-3 text-gray-500 text-xs">${exp.time}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteExpense(${index})" class="text-rose-500 hover:text-rose-700 font-bold"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('expenses-total-display').innerText = totalExp.toFixed(2) + " ج.م";
+            
+            const totalRev = todayData.completedOrders.reduce((sum, o) => sum + o.total, 0);
+            const net = totalRev - totalExp;
+            document.getElementById('net-revenue-display').innerText = net.toFixed(2) + " ج.م";
+        }
+
+        function openAddExpenseModal() {
+            document.getElementById('expense-modal').classList.remove('hidden');
+        }
+
+        function closeExpenseModal() {
+            document.getElementById('expense-modal').classList.add('hidden');
+        }
+
+        function saveExpense() {
+            const reason = document.getElementById('expense-reason-input').value;
+            const amount = Number(document.getElementById('expense-amount-input').value);
+
+            if (!reason || !amount) {
+                showAlert("تنبيه", "برجاء إدخال السبب والمبلغ بشكل صحيح!", false);
+                return;
+            }
+
+            const todayData = getTodayData();
+            todayData.expenses.push({
+                reason,
+                amount: Number(amount.toFixed(2)),
+                time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+            });
+
+            saveStore();
+            document.getElementById('expense-modal').classList.add('hidden');
+            document.getElementById('expense-reason-input').value = '';
+            document.getElementById('expense-amount-input').value = '';
+            renderExpenses();
+            updateHeaderTotals();
+            showAlert("تم", "تم تسجيل المصروف بنجاح!");
+        }
+
+        function deleteExpense(index) {
+            const todayData = getTodayData();
+            todayData.expenses.splice(index, 1);
+            saveStore();
+            renderExpenses();
+            updateHeaderTotals();
+        }
+
+        // 6. Reports, Reset & Dedicated Archive Functions
+        function onDateChanged() {
+            selectedDate = document.getElementById('report-date-picker').value;
+            renderReportsData();
+        }
+
+        function renderReportsData() {
+            const todayData = getTodayData();
+            document.getElementById('current-selected-date-label').innerText = selectedDate;
+
+            let totalRev = 0;
+            let cashRev = 0;
+            let vodafoneRev = 0;
+
+            todayData.completedOrders.forEach(o => {
+                totalRev += o.total;
+                if (o.paymentMethod === 'vodafone') {
+                    vodafoneRev += o.total;
+                } else {
+                    cashRev += o.total;
+                }
+            });
+
+            const totalExp = todayData.expenses.reduce((sum, e) => sum + e.amount, 0);
+
+            document.getElementById('report-total-revenue').innerText = totalRev.toFixed(2) + " ج.م";
+            document.getElementById('report-cash-revenue').innerText = cashRev.toFixed(2) + " ج.م";
+            document.getElementById('report-vodafone-revenue').innerText = vodafoneRev.toFixed(2) + " ج.م";
+            document.getElementById('report-total-expenses').innerText = totalExp.toFixed(2) + " ج.م";
+            document.getElementById('report-total-orders-count').innerText = todayData.completedOrders.length;
+
+            renderInvoicesTable(todayData.completedOrders);
+        }
+
+        function renderInvoicesTable(orders) {
+            const tbody = document.getElementById('completed-orders-tbody');
+            tbody.innerHTML = '';
+
+            if (orders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-gray-400">لا توجد فواتير مسجلة في هذا التاريخ</td></tr>`;
+                return;
+            }
+
+            orders.forEach(o => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-haven-900">${o.id}</td>
+                    <td class="p-3 font-semibold text-haven-700">${o.station}</td>
+                    <td class="p-3">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold ${o.paymentMethod === 'vodafone' ? 'bg-sky-100 text-sky-800' : 'bg-emerald-100 text-emerald-800'}">
+                            ${o.paymentMethod === 'vodafone' ? 'فودافون كاش' : 'كاش'}
+                        </span>
+                    </td>
+                    <td class="p-3 text-gray-500 text-xs">${o.time}</td>
+                    <td class="p-3 text-xs text-gray-600">
+                        ${o.items.map(i => `${i.name} (x${i.qty})`).join(', ')}
+                    </td>
+                    <td class="p-3 font-black text-haven-900">${Number(o.total).toFixed(2)} ج.م</td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteOrderRecord('${o.id}')" class="text-rose-500 hover:text-rose-700 font-bold text-xs"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function deleteOrderRecord(orderId) {
+            const todayData = getTodayData();
+            todayData.completedOrders = todayData.completedOrders.filter(o => o.id !== orderId);
+            saveStore();
+            renderReportsData();
+            updateHeaderTotals();
+        }
+
+        function confirmResetAndArchiveDay() {
+            if (!confirm("هل أنت متأكد من تصفير اليوم بالكامل (الإيرادات، الفواتير، المصاريف) وترحيل تفاصيل اليوم إلى أرشيف الأيام السابقة؟")) return;
+
+            const todayData = getTodayData();
+            let totalRev = todayData.completedOrders.reduce((sum, o) => sum + o.total, 0);
+            let totalExp = todayData.expenses.reduce((sum, e) => sum + e.amount, 0);
+            let netProfit = totalRev - totalExp;
+
+            const archiveRecord = {
+                date: selectedDate,
+                revenue: Number(totalRev.toFixed(2)),
+                expenses: Number(totalExp.toFixed(2)),
+                net: Number(netProfit.toFixed(2)),
+                ordersCount: todayData.completedOrders.length,
+                orders: [...todayData.completedOrders],
+                expensesList: [...todayData.expenses]
+            };
+
+            if (!appStore.archive) appStore.archive = [];
+            appStore.archive = appStore.archive.filter(item => item.date !== selectedDate);
+            appStore.archive.unshift(archiveRecord);
+
+            appStore.days[selectedDate] = {
+                completedOrders: [],
+                expenses: []
+            };
+
+            saveStore();
+            renderReportsData();
+            renderExpenses();
+            renderArchiveTable();
+            updateHeaderTotals();
+
+            showAlert("تم التصفير والأرشيف بنجاح", "تم حفظ وتثبيت بيانات اليوم في أرشيف الأيام السابقة وتصفير اليوميات تماماً لبدء يوم عمل جديد!");
+        }
+
+        function renderArchiveTable() {
+            const tbody = document.getElementById('archive-table-tbody');
+            tbody.innerHTML = '';
+
+            if (!appStore.archive || appStore.archive.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-gray-400">لا توجد أيام مؤرشفة حتى الآن</td></tr>`;
+                return;
+            }
+
+            appStore.archive.forEach((rec, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-haven-900">${rec.date}</td>
+                    <td class="p-3 font-bold text-emerald-700">${Number(rec.revenue).toFixed(2)} ج.م</td>
+                    <td class="p-3 font-bold text-rose-700">${Number(rec.expenses).toFixed(2)} ج.م</td>
+                    <td class="p-3 font-black text-haven-900">${Number(rec.net).toFixed(2)} ج.م</td>
+                    <td class="p-3">${rec.ordersCount} فاتورة</td>
+                    <td class="p-3 text-center space-x-2 space-x-reverse">
+                        <button onclick="viewArchiveDay('${rec.date}')" class="px-3 py-1 bg-haven-700 text-white rounded-lg text-xs font-bold hover:bg-haven-800">عرض التفاصيل</button>
+                        <button onclick="deleteArchiveDay(${idx})" class="text-rose-500 hover:text-rose-700 font-bold text-xs p-1"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function viewArchiveDay(dateStr) {
+            document.getElementById('report-date-picker').value = dateStr;
+            selectedDate = dateStr;
+            renderReportsData();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showAlert("الأرشيف", `تم تحميل تقارير يوم ${dateStr} بنجاح في الجدول أعلاه.`);
+        }
+
+        function deleteArchiveDay(index) {
+            if (confirm("هل أنت متأكد من حذف هذا اليوم من الأرشيف؟")) {
+                appStore.archive.splice(index, 1);
+                saveStore();
+                renderArchiveTable();
+            }
+        }
+
+        function updateHeaderTotals() {
+            const todayData = getTodayData();
+            let totalRev = 0;
+            let vodafoneRev = 0;
+            todayData.completedOrders.forEach(o => {
+                totalRev += o.total;
+                if (o.paymentMethod === 'vodafone') vodafoneRev += o.total;
+            });
+
+            document.getElementById('header-total-revenue').innerText = totalRev.toFixed(2) + " ج.م";
+            document.getElementById('header-vodafone-revenue').innerText = vodafoneRev.toFixed(2) + " ج.م";
+        }
+    </script>
+</body>
+</html>
